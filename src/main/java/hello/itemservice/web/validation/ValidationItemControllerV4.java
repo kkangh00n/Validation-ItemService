@@ -4,6 +4,7 @@ import hello.itemservice.domain.item.Item;
 import hello.itemservice.domain.item.ItemRepository;
 import hello.itemservice.domain.item.SaveCheck;
 import hello.itemservice.domain.item.UpdateCheck;
+import hello.itemservice.web.validation.form.ItemSaveForm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -44,23 +45,28 @@ public class ValidationItemControllerV4 {
     }
 
     @PostMapping("/add")
-    public String addItem(@Validated(SaveCheck.class) @ModelAttribute Item item, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {
+    public String addItem(@Validated @ModelAttribute("item") ItemSaveForm form, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {
 
-        if (item.getPrice() != null && item.getQuantity() != null) {
-            int resultPrice = item.getPrice() * item.getQuantity();
+        if (form.getPrice() != null && form.getQuantity() != null) {
+            int resultPrice = form.getPrice() * form.getQuantity();
             if (resultPrice < 10000) {
                 bindingResult.reject("totalPriceMin", new Object[]{10000,
                         resultPrice}, null);
             }
         }
 
-            //검증에 실패하면 다시 입력폼으로
+        //검증에 실패하면 다시 입력폼으로
         if(bindingResult.hasErrors()){          //에러가 비어있지 않다면 => 에러가 있다면
             log.info("errors={}", bindingResult);
             return "validation/v4/addForm";
         }
 
         //성공로직
+        Item item = new Item();
+        item.setItemName(form.getItemName());
+        item.setPrice(form.getPrice());
+        item.setQuantity(form.getQuantity());
+
         Item savedItem = itemRepository.save(item);
         redirectAttributes.addAttribute("itemId", savedItem.getId());
         redirectAttributes.addAttribute("status", true);
